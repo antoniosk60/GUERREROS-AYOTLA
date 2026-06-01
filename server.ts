@@ -53,7 +53,7 @@ async function startServer() {
     const emailLower = email.toLowerCase();
 
     // Default testing configuration for Admin
-    if (emailLower === 'admin@canchafutbol.com' && password === 'admin') {
+    if (emailLower === 'angelantonioflore837@gmail.com' && password === '2203306181') {
       const adminUser = dbStore.getUserById('admin-01');
       if (adminUser) {
         const token = signToken({ id: adminUser.id, email: adminUser.email, role: adminUser.role });
