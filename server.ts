@@ -3,6 +3,8 @@ import path from 'path';
 import { createServer as createViteServer } from 'vite';
 import { dbStore, signToken, verifyToken, FIELDS } from './server/dbStore';
 import { Reservation, Payment, Promotion, Photo, User, Team, Player, Review } from './src/types';
+import { sendReservationWhatsApp, generateEntryCode } from './server/twilioService';
+
 
 async function startServer() {
   const app = express();
@@ -193,10 +195,17 @@ async function startServer() {
       totalPrice: Number(totalPrice),
       status: 'pending',
       paymentStatus: 'pending',
+      entryCode: generateEntryCode(),
       createdAt: new Date().toISOString()
     };
 
     const saved = dbStore.addReservation(newReservation);
+    
+    // Send automated WhatsApp notification asynchronously in the background
+    sendReservationWhatsApp(saved).catch(err => {
+      console.error('[TWILIO EXCEPTION]: Error sending automated transaction WhatsApp:', err);
+    });
+
     res.status(201).json(saved);
   });
 
@@ -212,6 +221,11 @@ async function startServer() {
     if (!updated) {
       return res.status(404).json({ message: 'No se encontró la reserva.' });
     }
+
+    // Send WhatsApp notification of updated reservation status
+    sendReservationWhatsApp(updated).catch(err => {
+      console.error('[TWILIO EXCEPTION]: Error sending updated WhatsApp notification:', err);
+    });
 
     res.json(updated);
   });
@@ -245,6 +259,16 @@ async function startServer() {
     };
 
     const savedPayment = dbStore.addPayment(newPayment);
+
+    // After adding the payment, the reservation is confirmed/paid automatically.
+    // Fetch the updated reservation from the dbStore and send a WhatsApp confirmation.
+    const resObj = dbStore.getReservations().find(r => r.id === savedPayment.reservationId);
+    if (resObj) {
+      sendReservationWhatsApp(resObj).catch(err => {
+        console.error('[TWILIO EXCEPTION]: Error sending payment confirmation WhatsApp:', err);
+      });
+    }
+
     res.status(201).json(savedPayment);
   });
 

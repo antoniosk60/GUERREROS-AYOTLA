@@ -31,6 +31,7 @@ export interface Reservation {
   totalPrice: number;
   status: 'pending' | 'confirmed' | 'cancelled';
   paymentStatus: 'pending' | 'paid';
+  entryCode?: string; // Access code for the complex
   createdAt: string;
 }
 

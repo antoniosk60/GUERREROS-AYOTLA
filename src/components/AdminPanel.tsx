@@ -580,7 +580,10 @@ export default function AdminPanel({ token, onLogout }: AdminPanelProps) {
                         <tr key={bk.id}>
                           <td className="py-3 pl-2">
                             <strong className="block text-gray-200 font-medium">{bk.userName}</strong>
-                            <span className="text-[10px] font-mono text-gray-500">{bk.id}</span>
+                            <span className="text-[10px] font-mono text-gray-500">
+                              {bk.id}
+                              {bk.entryCode && <span className="text-amber-400 ml-1.5 font-bold">🔑 {bk.entryCode}</span>}
+                            </span>
                           </td>
                           <td className="py-3 text-gray-300">{bk.fieldName}</td>
                           <td className="py-3 text-gray-400 font-mono">{bk.date} @ {bk.timeSlot}</td>
@@ -623,9 +626,12 @@ export default function AdminPanel({ token, onLogout }: AdminPanelProps) {
                     <div key={res.id} className="glass-panel p-5 rounded-2xl border border-gray-800 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 text-xs font-mono">
                       
                       <div className="space-y-1">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-emerald-400 font-bold">{res.fieldName}</span>
                           <span className="text-[10px] px-1.5 py-0.5 bg-zinc-800 text-gray-300 rounded">{res.id}</span>
+                          {res.entryCode && (
+                            <span className="text-[10px] px-1.5 py-0.5 bg-amber-500/15 text-amber-400 border border-amber-500/30 rounded font-black">🔑 {res.entryCode}</span>
+                          )}
                         </div>
                         <p className="text-white font-sans text-sm font-bold mt-1">{res.userName} • <span className="text-xs text-gray-400">{res.userPhone}</span></p>
                         <p className="text-gray-400 font-mono text-[11.5px]">{res.date} en horario <strong className="text-gray-200">{res.timeSlot}</strong> ({res.duration}h)</p>

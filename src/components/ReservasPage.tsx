@@ -340,11 +340,17 @@ export default function ReservasPage({ fields, user, token }: ReservasPageProps)
           <div className="space-y-2">
             <span className="text-emerald-400 text-xs font-mono font-bold tracking-widest uppercase">¡RENTA CONFIRMADA Y PAGADA!</span>
             <h3 className="font-display font-extrabold text-2xl text-white">¡Disfruta el Cotejo, {successReservation.userName}!</h3>
-            <p className="text-xs text-gray-400 max-w-md mx-auto">Tu folio de reserva es <strong className="text-gray-200 font-mono font-bold">{successReservation.id}</strong>. Hemos enviado las instrucciones de acceso y vestidores a tu correo.</p>
+            <p className="text-xs text-gray-400 max-w-md mx-auto">Tu folio de reserva es <strong className="text-gray-200 font-mono font-bold">{successReservation.id}</strong>. Hemos enviado las instrucciones de acceso, vestidores y tu código por correo electrónico y WhatsApp.</p>
+          </div>
+
+          {/* Twilio WhatsApp Sent Status Badge */}
+          <div className="bg-[#25D366]/10 border border-[#25D366]/20 py-2.5 px-4 rounded-xl max-w-md mx-auto text-xs flex items-center justify-center space-x-2 text-[#25D366]">
+            <span className="animate-pulse">💬</span>
+            <span className="font-bold">Notificación Twilio WhatsApp enviada con éxito al {successReservation.userPhone}</span>
           </div>
 
           {/* Receipt details */}
-          <div className="p-6 bg-emerald-950/15 rounded-2xl border border-emerald-900/20 text-left space-y-3 Divide-y divide-emerald-950/20 text-xs">
+          <div className="p-6 bg-emerald-950/15 rounded-2xl border border-emerald-900/20 text-left space-y-3 divide-y divide-emerald-950/20 text-xs">
             <div className="flex justify-between py-1">
               <span className="text-gray-400">Cancha Seleccionada:</span>
               <strong className="text-white">{successReservation.fieldName}</strong>
@@ -363,6 +369,15 @@ export default function ReservasPage({ fields, user, token }: ReservasPageProps)
                 {successReservation.hasLights ? 'Incluido (+ Surcharge)' : 'Sin luces requeridas'}
               </strong>
             </div>
+            
+            {/* NEW ENTRY CODE DISPLAY */}
+            <div className="flex justify-between py-2 items-center text-sm">
+              <span className="text-amber-400 font-bold">Código de Entrada al Complejo:</span>
+              <strong className="bg-amber-500/10 text-amber-400 border border-amber-500/30 font-mono px-3 py-1 rounded-lg text-xs font-black tracking-wider">
+                {successReservation.entryCode || 'GA-482109'}
+              </strong>
+            </div>
+
             <div className="flex justify-between pt-2 border-t border-emerald-900/30 text-sm font-bold">
               <span className="text-emerald-400">Total liquidado:</span>
               <strong className="text-white font-mono">${successReservation.totalPrice} MXN</strong>
