@@ -1,0 +1,6 @@
+{
+  "name": "Guerreros Ayotla",
+  "description": "Sistema oficial de la Liga de Fútbol 7 Guerreros Ayotla (Ixtapaluca, EdoMex). Consulta roles de juego, registro de equipos, MVPs de la jornada, galería y agenda tus encuentros.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
