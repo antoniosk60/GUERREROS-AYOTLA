@@ -26,6 +26,7 @@ export default function EquiposPage({ isAdmin, adminToken }: EquiposPageProps) {
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [subTab, setSubTab] = useState<'rosters' | 'mvps' | 'schedules'>('rosters');
   
   // Registration Form State (Public / Self-registration of teams)
   const [showRegisterForm, setShowRegisterForm] = useState(false);
@@ -232,8 +233,47 @@ export default function EquiposPage({ isAdmin, adminToken }: EquiposPageProps) {
         </p>
       </div>
 
-      {/* Stats Bento Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* Sub-navigation Tabs */}
+      <div className="flex border-b border-emerald-950/30 gap-1 sm:gap-2 pb-0.5 overflow-x-auto select-none no-scrollbar">
+        <button
+          onClick={() => setSubTab('rosters')}
+          className={`px-4 py-3 text-xs sm:text-sm font-bold border-b-2 transition-all whitespace-nowrap flex items-center space-x-2 cursor-pointer ${
+            subTab === 'rosters'
+              ? 'border-emerald-500 text-emerald-400 font-extrabold bg-emerald-500/5'
+              : 'border-transparent text-gray-400 hover:text-white'
+          }`}
+        >
+          <Users className="w-4 h-4" />
+          <span>Equipos y Plantillas</span>
+        </button>
+        <button
+          onClick={() => setSubTab('mvps')}
+          className={`px-4 py-3 text-xs sm:text-sm font-bold border-b-2 transition-all whitespace-nowrap flex items-center space-x-2 cursor-pointer ${
+            subTab === 'mvps'
+              ? 'border-emerald-500 text-emerald-400 font-extrabold bg-emerald-500/5'
+              : 'border-transparent text-gray-400 hover:text-white'
+          }`}
+        >
+          <Award className="w-4" />
+          <span>Muro de MVP (Tarjetas ¡GOOOOOL!)</span>
+        </button>
+        <button
+          onClick={() => setSubTab('schedules')}
+          className={`px-4 py-3 text-xs sm:text-sm font-bold border-b-2 transition-all whitespace-nowrap flex items-center space-x-2 cursor-pointer ${
+            subTab === 'schedules'
+              ? 'border-emerald-500 text-emerald-400 font-extrabold bg-emerald-500/5'
+              : 'border-transparent text-gray-400 hover:text-white'
+          }`}
+        >
+          <Calendar className="w-4" />
+          <span>Rol de Juego & Calendario</span>
+        </button>
+      </div>
+
+      {subTab === 'rosters' && (
+      <div className="space-y-12 animate-fadeIn">
+        {/* Stats Bento Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="glass-panel p-6 rounded-2xl flex items-center space-x-4 border border-emerald-950/40 shadow-sm">
           <div className="p-3.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl">
             <Shield className="w-6 h-6" />
@@ -784,6 +824,535 @@ export default function EquiposPage({ isAdmin, adminToken }: EquiposPageProps) {
         </div>
 
       </div>
+      </div>
+      )}
+
+      {/* SUB-TAB 2: MVPs COLLECTIBLE TRADING CARDS (¡GOOOOOL!) */}
+      {subTab === 'mvps' && (
+        <div className="space-y-8 animate-fadeIn">
+          
+          {/* Featured Banner Card */}
+          <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-amber-500/20 bg-gradient-to-r from-amber-500/5 via-transparent to-transparent flex flex-col lg:flex-row items-center gap-8 shadow-xl">
+            <div className="w-full lg:w-2/5 max-h-72 overflow-hidden rounded-2xl border border-amber-500/20 shadow-lg relative">
+              <img 
+                src="/src/assets/images/mvp_boy_trophy_1780307479148.png" 
+                alt="MVP Estrella Semanal" 
+                className="w-full h-full object-cover object-center scale-102"
+                referrerPolicy="no-referrer"
+              />
+              <span className="absolute bottom-3 right-3 bg-amber-500 text-black px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-lg font-mono">
+                Estrella de la Semana
+              </span>
+            </div>
+            
+            <div className="space-y-4 flex-grow text-center lg:text-left">
+              <div className="inline-flex items-center space-x-2 bg-amber-500/15 text-amber-300 border border-amber-500/20 px-3 py-1 rounded-full text-[10px] font-mono uppercase font-bold tracking-wider">
+                🏆 Jugador Honorífico
+              </div>
+              <h3 className="font-display font-black text-2xl sm:text-3xl text-white tracking-tight leading-tight">
+                Reconocimiento Especial del Torneo
+              </h3>
+              <p className="text-gray-400 text-xs sm:text-sm max-w-xl leading-relaxed">
+                Nuestros futbolistas del complejo Guerreros Ayotla se entregan en la cancha para convertirse en leyendas. Cada semana seleccionamos a los destacados por su técnica, lealtad y aportación goleadora de Copa de todas las ligas.
+              </p>
+              <div className="flex flex-wrap gap-4 justify-center lg:justify-start pt-2 text-xs font-mono text-gray-300">
+                <span className="flex items-center"><Check className="w-4 h-4 text-emerald-400 mr-1.5" /> Goleo Limpio</span>
+                <span className="flex items-center"><Check className="w-4 h-4 text-emerald-400 mr-1.5" /> MVP Semanal</span>
+                <span className="flex items-center"><Check className="w-4 h-4 text-emerald-400 mr-1.5" /> Fair Play Activo</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Cards Grid */}
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2">
+              <Award className="w-5 h-5 text-emerald-400" />
+              <h4 className="font-display font-extrabold text-xl text-white">Tarjetas Digitales Oficiales</h4>
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              
+              {/* Card 1: Piña (López) */}
+              <div className="group glass-panel rounded-2xl border border-amber-500/25 bg-gradient-to-br from-amber-500/10 via-zinc-950 to-zinc-950 p-1 overflow-hidden transition-all duration-300 hover:scale-103 hover:shadow-[0_0_20px_rgba(245,158,11,0.25)] relative">
+                <div className="h-64 overflow-hidden rounded-xl relative bg-zinc-900 border border-gray-800">
+                  <img 
+                    src="/src/assets/images/pina_goal_card_1780307507932.png" 
+                    alt="Coleccionable Piña" 
+                    className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
+                    referrerPolicy="no-referrer"
+                  />
+                  <div className="absolute top-2.5 left-2.5 bg-black/80 text-amber-400 text-[8px] font-mono px-2 py-0.5 rounded border border-amber-500/20 font-black">
+                    MVP SABATINA
+                  </div>
+                </div>
+                <div className="p-4 space-y-1.5 text-left">
+                  <div className="flex justify-between items-center">
+                    <h5 className="font-display font-black text-white text-base">E. "Piña" López</h5>
+                    <span className="text-[10px] font-mono font-black px-1.5 py-0.5 rounded bg-amber-500 text-black">94 DEL</span>
+                  </div>
+                  <p className="text-[10px] text-gray-400 font-mono">Equipo: <span className="text-amber-400 font-bold">Barcelona</span> • Goles: <span className="text-white font-bold">15</span></p>
+                  
+                  {/* FIFA style Mini stats */}
+                  <div className="grid grid-cols-6 gap-1 pt-1.5 border-t border-zinc-800 font-mono text-[9px] text-center text-gray-300 font-semibold uppercase">
+                    <div>
+                      <p className="text-[7px] text-gray-500">RIT</p>
+                      <p className="text-amber-400">93</p>
+                    </div>
+                    <div>
+                      <p className="text-[7px] text-gray-500">TIR</p>
+                      <p className="text-amber-400">95</p>
+                    </div>
+                    <div>
+                      <p className="text-[7px] text-gray-500">PAS</p>
+                      <p className="text-amber-400">89</p>
+                    </div>
+                    <div>
+                      <p className="text-[7px] text-gray-500">REG</p>
+                      <p className="text-amber-400">91</p>
+                    </div>
+                    <div>
+                      <p className="text-[7px] text-gray-500">DEF</p>
+                      <p className="text-gray-600">45</p>
+                    </div>
+                    <div>
+                      <p className="text-[7px] text-gray-500">FIS</p>
+                      <p className="text-amber-400">82</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Card 2: García */}
+              <div className="group glass-panel rounded-2xl border border-emerald-500/25 bg-gradient-to-br from-emerald-500/10 via-zinc-950 to-zinc-950 p-1 overflow-hidden transition-all duration-300 hover:scale-103 hover:shadow-[0_0_20px_rgba(16,185,129,0.25)] relative">
+                <div className="h-64 overflow-hidden rounded-xl relative bg-zinc-900 border border-gray-800">
+                  <div className="w-full h-full bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-emerald-950 via-zinc-950 to-black flex items-center justify-center p-4 relative">
+                    <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1508098682722-e99c43a406b2?q=80&w=300')] opacity-5 bg-cover bg-center"></div>
+                    <div className="text-center space-y-3 z-10">
+                      <span className="text-emerald-400 text-3xl font-black tracking-wider animate-pulse block font-mono">¡GOOOOOL!</span>
+                      <div className="w-24 h-24 rounded-full border-2 border-emerald-500/30 overflow-hidden mx-auto shadow-lg shadow-emerald-500/10">
+                        <div className="w-full h-full bg-zinc-800 flex items-center justify-center text-4xl text-gray-200 font-bold">⚽</div>
+                      </div>
+                      <h6 className="font-display font-black text-white text-sm uppercase tracking-wide">GARCÍA</h6>
+                    </div>
+                  </div>
+                  <div className="absolute top-2.5 left-2.5 bg-black/80 text-emerald-400 text-[8px] font-mono px-2 py-0.5 rounded border border-emerald-500/20 font-black">
+                    MVP JORNADA RÁPIDO
+                  </div>
+                </div>
+                <div className="p-4 space-y-1.5 text-left">
+                  <div className="flex justify-between items-center">
+                    <h5 className="font-display font-black text-white text-base">García "Mágico"</h5>
+                    <span className="text-[10px] font-mono font-black px-1.5 py-0.5 rounded bg-emerald-500 text-black">91 MCO</span>
+                  </div>
+                  <p className="text-[10px] text-gray-400 font-mono">Equipo: <span className="text-emerald-400 font-bold">Sensación</span> • Goles: <span className="text-white font-bold">11</span></p>
+                  
+                  <div className="grid grid-cols-6 gap-1 pt-1.5 border-t border-zinc-800 font-mono text-[9px] text-center text-gray-300 font-semibold uppercase">
+                    <div>
+                      <p className="text-[7px] text-gray-500">RIT</p>
+                      <p className="text-emerald-400">92</p>
+                    </div>
+                    <div>
+                      <p className="text-[7px] text-gray-500">TIR</p>
+                      <p className="text-emerald-400">88</p>
+                    </div>
+                    <div>
+                      <p className="text-[7px] text-gray-500">PAS</p>
+                      <p className="text-emerald-400">94</p>
+                    </div>
+                    <div>
+                      <p className="text-[7px] text-gray-500">REG</p>
+                      <p className="text-emerald-400">95</p>
+                    </div>
+                    <div>
+                      <p className="text-[7px] text-gray-500">DEF</p>
+                      <p className="text-emerald-400">58</p>
+                    </div>
+                    <div>
+                      <p className="text-[7px] text-gray-500">FIS</p>
+                      <p className="text-emerald-400">71</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Card 3: Jimmy */}
+              <div className="group glass-panel rounded-2xl border border-indigo-500/25 bg-gradient-to-br from-indigo-500/10 via-zinc-950 to-zinc-950 p-1 overflow-hidden transition-all duration-300 hover:scale-103 hover:shadow-[0_0_20px_rgba(99,102,241,0.25)] relative">
+                <div className="h-64 overflow-hidden rounded-xl relative bg-zinc-900 border border-gray-800">
+                  <div className="w-full h-full bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-indigo-950 via-zinc-950 to-black flex items-center justify-center p-4 relative">
+                    <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1544698310-74ea9d1c8258?q=80&w=300')] opacity-5 bg-cover bg-center"></div>
+                    <div className="text-center space-y-3 z-10">
+                      <span className="text-indigo-400 text-3xl font-black tracking-wider animate-pulse block font-mono">¡GOOOOOL!</span>
+                      <div className="w-24 h-24 rounded-full border-2 border-indigo-500/30 overflow-hidden mx-auto shadow-lg shadow-indigo-500/10">
+                        <div className="w-full h-full bg-zinc-800 flex items-center justify-center text-4xl text-gray-200 font-bold">🤸‍♂️</div>
+                      </div>
+                      <h6 className="font-display font-black text-white text-sm uppercase tracking-wide">JIMMY</h6>
+                    </div>
+                  </div>
+                  <div className="absolute top-2.5 left-2.5 bg-black/80 text-indigo-400 text-[8px] font-mono px-2 py-0.5 rounded border border-indigo-500/20 font-black">
+                    MVP JUVENIL DOMINICAL
+                  </div>
+                </div>
+                <div className="p-4 space-y-1.5 text-left">
+                  <div className="flex justify-between items-center">
+                    <h5 className="font-display font-black text-white text-base">Jimmy Santacruz</h5>
+                    <span className="text-[10px] font-mono font-black px-1.5 py-0.5 rounded bg-indigo-500 text-black">89 MED</span>
+                  </div>
+                  <p className="text-[10px] text-gray-400 font-mono">Equipo: <span className="text-indigo-400 font-bold">Barcelona</span> • Goles: <span className="text-white font-bold">13</span></p>
+                  
+                  <div className="grid grid-cols-6 gap-1 pt-1.5 border-t border-zinc-800 font-mono text-[9px] text-center text-gray-300 font-semibold uppercase">
+                    <div>
+                      <p className="text-[7px] text-gray-500">RIT</p>
+                      <p className="text-indigo-400">95</p>
+                    </div>
+                    <div>
+                      <p className="text-[7px] text-gray-500">TIR</p>
+                      <p className="text-indigo-400">86</p>
+                    </div>
+                    <div>
+                      <p className="text-[7px] text-gray-500">PAS</p>
+                      <p className="text-indigo-400">91</p>
+                    </div>
+                    <div>
+                      <p className="text-[7px] text-gray-500">REG</p>
+                      <p className="text-indigo-400">94</p>
+                    </div>
+                    <div>
+                      <p className="text-[7px] text-gray-500">DEF</p>
+                      <p className="text-indigo-400">62</p>
+                    </div>
+                    <div>
+                      <p className="text-[7px] text-gray-500">FIS</p>
+                      <p className="text-indigo-400">77</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Card 4: Santigol */}
+              <div className="group glass-panel rounded-2xl border border-teal-500/25 bg-gradient-to-br from-teal-500/10 via-zinc-950 to-zinc-950 p-1 overflow-hidden transition-all duration-300 hover:scale-103 hover:shadow-[0_0_20px_rgba(20,184,166,0.25)] relative">
+                <div className="h-64 overflow-hidden rounded-xl relative bg-zinc-900 border border-gray-800">
+                  <div className="w-full h-full bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-teal-950 via-zinc-950 to-black flex items-center justify-center p-4 relative">
+                    <div className="text-center space-y-3 z-10 font-mono">
+                      <span className="text-teal-400 text-3xl font-black tracking-wider animate-pulse block">¡GOOOOOL!</span>
+                      <div className="w-24 h-24 rounded-full border-2 border-teal-500/30 overflow-hidden mx-auto shadow-lg shadow-teal-500/10 flex items-center justify-center text-4xl">
+                        🎖️
+                      </div>
+                      <h6 className="font-display font-black text-white text-sm uppercase tracking-wide">SANTIGOL</h6>
+                    </div>
+                  </div>
+                  <div className="absolute top-2.5 left-2.5 bg-black/80 text-teal-400 text-[8px] font-mono px-2 py-0.5 rounded border border-teal-500/20 font-black">
+                    NUEVOS VALORES
+                  </div>
+                </div>
+                <div className="p-4 space-y-1.5 text-left">
+                  <div className="flex justify-between items-center">
+                    <h5 className="font-display font-black text-white text-base">Santiago Silva</h5>
+                    <span className="text-[10px] font-mono font-black px-1.5 py-0.5 rounded bg-teal-500 text-black">90 DEL</span>
+                  </div>
+                  <p className="text-[10px] text-gray-400 font-mono">Equipo: <span className="text-teal-400 font-bold">Tabora Jr</span> • Goles: <span className="text-white font-bold">10</span></p>
+                  
+                  <div className="grid grid-cols-6 gap-1 pt-1.5 border-t border-zinc-800 font-mono text-[9px] text-center text-gray-300 font-semibold uppercase">
+                    <div>
+                      <p className="text-[7px] text-gray-500">RIT</p>
+                      <p className="text-teal-400">93</p>
+                    </div>
+                    <div>
+                      <p className="text-[7px] text-gray-500">TIR</p>
+                      <p className="text-teal-400">92</p>
+                    </div>
+                    <div>
+                      <p className="text-[7px] text-gray-500">PAS</p>
+                      <p className="text-teal-400">82</p>
+                    </div>
+                    <div>
+                      <p className="text-[7px] text-gray-500">REG</p>
+                      <p className="text-teal-400">87</p>
+                    </div>
+                    <div>
+                      <p className="text-[7px] text-gray-500">DEF</p>
+                      <p className="text-gray-600">30</p>
+                    </div>
+                    <div>
+                      <p className="text-[7px] text-gray-500">FIS</p>
+                      <p className="text-teal-400">79</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Additional MVP Listings */}
+            <div className="glass-panel p-6 rounded-2xl border border-zinc-800/60 overflow-hidden">
+              <h5 className="font-display font-bold text-sm text-gray-200 mb-4 border-b border-zinc-800/80 pb-2">Otros Jugadores Destacados del Cuadro de Honor</h5>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-xs font-mono">
+                <div className="p-3 bg-zinc-950/40 rounded-xl border border-zinc-900 flex justify-between items-center">
+                  <div>
+                    <p className="text-white font-bold">Nerik Silva</p>
+                    <p className="text-[10px] text-gray-500">Medio • Tabora Jr</p>
+                  </div>
+                  <span className="bg-emerald-500/10 text-emerald-400 font-bold px-2 py-0.5 rounded text-[10px]">8 Goles</span>
+                </div>
+                <div className="p-3 bg-zinc-950/40 rounded-xl border border-zinc-900 flex justify-between items-center">
+                  <div>
+                    <p className="text-white font-bold">Martín Ortiz</p>
+                    <p className="text-[10px] text-gray-500">Frente • Tabora FC</p>
+                  </div>
+                  <span className="bg-emerald-500/10 text-emerald-400 font-bold px-2 py-0.5 rounded text-[10px]">9 Goles</span>
+                </div>
+                <div className="p-3 bg-zinc-950/40 rounded-xl border border-zinc-900 flex justify-between items-center">
+                  <div>
+                    <p className="text-white font-bold">Fernandito</p>
+                    <p className="text-[10px] text-gray-500">Pivote • Tabora Jr</p>
+                  </div>
+                  <span className="bg-emerald-500/10 text-emerald-400 font-bold px-2 py-0.5 rounded text-[10px]">7 Goles</span>
+                </div>
+                <div className="p-3 bg-zinc-950/40 rounded-xl border border-zinc-900 flex justify-between items-center">
+                  <div>
+                    <p className="text-white font-bold">Gaby Martínez</p>
+                    <p className="text-[10px] text-gray-500">Delantera • España</p>
+                  </div>
+                  <span className="bg-emerald-500/10 text-emerald-400 font-bold px-2 py-0.5 rounded text-[10px]">14 Goles</span>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      )}
+
+      {/* SUB-TAB 3: ROL DE JUEGOS & TOURNAMENT CALENDARS */}
+      {subTab === 'schedules' && (
+        <div className="space-y-8 animate-fadeIn">
+          
+          <div className="glass-panel p-6 rounded-2xl border border-emerald-500/10 bg-emerald-950/5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <h4 className="font-display font-extrabold text-lg text-white">Rol de Juegos Semanal</h4>
+              <p className="text-xs text-gray-400 font-sans mt-0.5">Consulta la programación de partidos oficiales, horarios de prácticas de fin de semana y resultados de Cuartos de Final y Semifinales.</p>
+            </div>
+            <div className="bg-zinc-950 px-4 py-2 border border-zinc-800 rounded-xl font-mono text-[10px] sm:text-xs text-gray-300">
+              📅 Fecha Actual del Corte: <strong className="text-emerald-400 text-xs text-nowrap">Domingo 31 de Mayo - Lunes 1 de Junio</strong>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            {/* Category 1: Libre Sabatina */}
+            <div className="glass-panel rounded-2xl border border-zinc-800/80 overflow-hidden flex flex-col text-left">
+              <div className="bg-emerald-950/20 px-4 py-3 border-b border-zinc-800/80 flex justify-between items-center">
+                <span className="text-white font-display font-bold text-xs uppercase tracking-wider">Libre Sabatina</span>
+                <span className="bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 rounded px-2 py-0.5 font-mono text-[9px] font-black uppercase">Jornada 10</span>
+              </div>
+              <div className="p-4 divide-y divide-zinc-900 space-y-3.5 flex-grow font-mono text-[11px]">
+                
+                <div className="flex justify-between items-center py-1.5">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-gray-400 font-black">HA</span><span className="text-gray-500">vs</span><span className="text-indigo-400 font-black">INT</span>
+                  </div>
+                  <span className="text-gray-300 font-semibold text-[10px] bg-zinc-900 border border-zinc-800 px-2 py-0.5 rounded">6:00 PM</span>
+                </div>
+
+                <div className="flex justify-between items-center pt-3 py-1.5">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-blue-400 font-black">CAP</span><span className="text-gray-500">vs</span><span className="text-green-400 font-black">PAL</span>
+                  </div>
+                  <span className="text-gray-300 font-semibold text-[10px] bg-zinc-900 border border-zinc-800 px-2 py-0.5 rounded">6:40 PM</span>
+                </div>
+
+                <div className="flex justify-between items-center pt-3 py-1.5">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-red-400 font-black">ROM</span><span className="text-gray-500">vs</span><span className="text-amber-400 font-black">VOD</span>
+                  </div>
+                  <span className="text-gray-300 font-semibold text-[10px] bg-zinc-900 border border-zinc-800 px-2 py-0.5 rounded">7:20 PM</span>
+                </div>
+
+                <div className="flex justify-between items-center pt-3 py-1.5">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-purple-400 font-black">PAC</span><span className="text-gray-500">vs</span><span className="text-red-500 font-black">LIV</span>
+                  </div>
+                  <span className="text-gray-300 font-semibold text-[10px] bg-zinc-900 border border-zinc-800 px-2 py-0.5 rounded">8:00 PM</span>
+                </div>
+
+                <div className="flex justify-between items-center pt-3 py-1.5">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-emerald-400 font-black">CLA</span><span className="text-gray-500">vs</span><span className="text-sky-400 font-black">RIV</span>
+                  </div>
+                  <span className="text-gray-300 font-semibold text-[10px] bg-zinc-900 border border-zinc-800 px-2 py-0.5 rounded">8:40 PM</span>
+                </div>
+
+                <div className="flex justify-between items-center pt-3 py-1.5">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-teal-400 font-black">NOV</span><span className="text-gray-500">vs</span><span className="text-orange-400 font-black">REA</span>
+                  </div>
+                  <span className="text-gray-300 font-semibold text-[10px] bg-zinc-900 border border-zinc-800 px-2 py-0.5 rounded">9:20 PM</span>
+                </div>
+
+                <div className="flex justify-between items-center pt-3 py-1.5">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-gray-300 font-black">REB</span><span className="text-gray-500">vs</span><span className="text-pink-400 font-black">AMI</span>
+                  </div>
+                  <span className="text-gray-300 font-semibold text-[10px] bg-zinc-900 border border-zinc-800 px-2 py-0.5 rounded">10:00 PM</span>
+                </div>
+
+                <div className="flex justify-between items-center pt-3 py-1.5">
+                  <div className="flex items-center space-x-2">
+                    <span className="text-amber-500 font-black">MAR</span><span className="text-gray-500">vs</span><span className="text-blue-500 font-black">TOT</span>
+                  </div>
+                  <span className="text-gray-300 font-semibold text-[10px] bg-zinc-900 border border-zinc-800 px-2 py-0.5 rounded">10:40 PM</span>
+                </div>
+
+              </div>
+            </div>
+
+            {/* Category 2: Nuevos Valores & Femenil */}
+            <div className="glass-panel rounded-2xl border border-zinc-800/80 overflow-hidden flex flex-col text-left">
+              <div className="bg-emerald-950/20 px-4 py-3 border-b border-zinc-800/80 flex justify-between items-center">
+                <span className="text-white font-display font-bold text-xs uppercase tracking-wider">Nuevos Valores & Femenil</span>
+                <span className="bg-amber-500/15 text-amber-400 border border-amber-500/25 rounded px-2 py-0.5 font-mono text-[9px] font-black uppercase">Fase Final</span>
+              </div>
+              <div className="p-4 space-y-4 flex-grow font-mono text-[11px]">
+                
+                {/* Gran Final Nuevos Valores */}
+                <div className="bg-amber-500/5 p-3 rounded-xl border border-amber-500/20 space-y-2">
+                  <p className="text-[10px] font-black text-amber-400 uppercase tracking-widest flex items-center">🏆 Gran Final de Copa</p>
+                  <div className="flex justify-between items-center text-sm font-black">
+                    <span className="text-white flex items-center">Sensación ⚽</span>
+                    <span className="text-gray-500 px-1 font-normal font-sans">vs</span>
+                    <span className="text-blue-400 flex items-center">⚽ Barcelona</span>
+                  </div>
+                  <div className="flex justify-between text-[10px] text-gray-500 pt-1 border-t border-zinc-900">
+                    <span>Domingo 31 de Mayo</span>
+                    <span className="text-white font-bold bg-zinc-900 px-2 py-0.5 rounded">8:20 PM</span>
+                  </div>
+                </div>
+
+                {/* Tercer Lugar Nuevos Valores */}
+                <div className="bg-zinc-950/60 p-3 rounded-xl border border-zinc-900 space-y-2">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">🥉 Tercer Lugar</p>
+                  <div className="flex justify-between items-center font-bold">
+                    <span className="text-red-400">Portugal</span>
+                    <span className="text-gray-500 font-normal font-sans">vs</span>
+                    <span className="text-sky-400">Barrios</span>
+                  </div>
+                  <div className="flex justify-between text-[10px] text-gray-500 pt-1 border-t border-zinc-900">
+                    <span>Domingo 31 de Mayo</span>
+                    <span className="text-white bg-zinc-900 px-2 py-0.5 rounded">7:40 PM</span>
+                  </div>
+                </div>
+
+                {/* Femenil Semifinal 1 */}
+                <div className="bg-pink-500/5 p-3 rounded-xl border border-pink-500/20 space-y-2">
+                  <p className="text-[10px] font-bold text-pink-400 uppercase tracking-widest">🚺 Semifinal Femenil 1</p>
+                  <div className="flex justify-between items-center font-bold">
+                    <span className="text-white">Argentina</span>
+                    <span className="text-gray-500 font-sans">vs</span>
+                    <span className="text-emerald-400">Águilas</span>
+                  </div>
+                  <div className="flex justify-between text-[10px] text-gray-500 pt-1 border-t border-zinc-900">
+                    <span>Domingo 31 de Mayo</span>
+                    <span className="text-white bg-zinc-900 px-2 py-0.5 rounded">7:00 PM</span>
+                  </div>
+                </div>
+
+                {/* Femenil Semifinal 2 */}
+                <div className="bg-pink-500/5 p-3 rounded-xl border border-pink-500/20 space-y-2">
+                  <p className="text-[10px] font-bold text-pink-400 uppercase tracking-widest">🚺 Semifinal Femenil 2</p>
+                  <div className="flex justify-between items-center font-bold">
+                    <span className="text-amber-400">España</span>
+                    <span className="text-gray-500 font-sans">vs</span>
+                    <span className="text-indigo-400">River</span>
+                  </div>
+                  <div className="flex justify-between text-[10px] text-gray-500 pt-1 border-t border-zinc-900">
+                    <span>Domingo 31 de Mayo</span>
+                    <span className="text-white bg-zinc-900 px-2 py-0.5 rounded">6:20 PM</span>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            {/* Category 3: Libre Dominical & Intersemanal */}
+            <div className="glass-panel rounded-2xl border border-zinc-800/80 overflow-hidden flex flex-col text-left">
+              <div className="bg-emerald-950/20 px-4 py-3 border-b border-zinc-800/80 flex justify-between items-center">
+                <span className="text-white font-display font-bold text-xs uppercase tracking-wider">Libre Dom. & Intersemanal</span>
+                <span className="bg-sky-500/15 text-sky-400 border border-sky-500/25 rounded px-2 py-0.5 font-mono text-[9px] font-black uppercase">Jornadas Especiales</span>
+              </div>
+              <div className="p-4 space-y-4 flex-grow font-mono text-[11px]">
+                
+                {/* Result 1: Lib. Dom Semifinal Vuelta */}
+                <div className="bg-emerald-500/5 p-3 rounded-xl border border-emerald-500/20 space-y-1.5">
+                  <span className="text-[9px] bg-emerald-500 text-black px-1.5 py-0.2 rounded font-black font-mono">RESULTADO OFICIAL (SEMIFINAL VUELTA)</span>
+                  <div className="flex justify-between items-center font-black mt-1">
+                    <span className="text-rose-400">Galácticos FC</span>
+                    <span className="text-white bg-zinc-900 px-2 py-0.5 rounded border border-zinc-800">2 - 3</span>
+                    <span className="text-emerald-400">Atlas</span>
+                  </div>
+                  <p className="text-[10px] text-gray-500 mt-1">Global: <strong className="text-white">Atlas Avanza a la Final (Global)</strong></p>
+                </div>
+
+                {/* Result 2: Lib. Dom Semifinal Vuelta */}
+                <div className="bg-emerald-500/5 p-3 rounded-xl border border-emerald-500/20 space-y-1.5">
+                  <span className="text-[9px] bg-emerald-500 text-black px-1.5 py-0.2 rounded font-black font-mono">RESULTADO OFICIAL (SEMIFINAL VUELTA)</span>
+                  <div className="flex justify-between items-center font-black mt-1">
+                    <span className="text-yellow-400">Tazos Dorados</span>
+                    <span className="text-white bg-zinc-900 px-2 py-0.5 rounded border border-zinc-800">6 - 3</span>
+                    <span className="text-blue-400">Tottenham</span>
+                  </div>
+                  <p className="text-[10px] text-gray-500 mt-1">Global: <strong className="text-white">Tazos Dorados Avanza a la Final (Global)</strong></p>
+                </div>
+
+                {/* Intersemanal Cuartos */}
+                <div className="bg-zinc-950/60 p-3 rounded-xl border border-zinc-900 space-y-2">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">🏟️ Cuartos Libre Intersemanal</p>
+                  
+                  <div className="flex justify-between items-center text-[11px] font-semibold text-gray-300 py-0.5">
+                    <span>Santos Tlapacoya vs Destructores</span>
+                    <span className="text-white font-bold">9:00 PM</span>
+                  </div>
+                  <div className="flex justify-between items-center text-[11px] font-semibold text-gray-300 py-0.5">
+                    <span>La 4ta vs Boca Jr</span>
+                    <span className="text-white font-bold">9:40 PM</span>
+                  </div>
+                  <div className="flex justify-between items-center text-[11px] font-semibold text-gray-300 py-0.5">
+                    <span>Nacional Jr vs Milan</span>
+                    <span className="text-white font-bold">10:30 PM</span>
+                  </div>
+
+                  <p className="text-[9px] text-gray-500 border-t border-zinc-900 pt-1.5">Se disputan los boletos directos a Semifinal en Cancha 1.</p>
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+
+          {/* Practice Schedules */}
+          <div className="glass-panel p-6 rounded-2xl border border-zinc-800/80 text-left space-y-4">
+            <h5 className="font-display font-bold text-sm text-white flex items-center">
+              🏫 Horarios de Prácticas y Clínicas de Entrenamiento Domésticas
+            </h5>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-xs font-mono">
+              <div className="bg-zinc-950/50 p-3 rounded-xl border border-zinc-900 space-y-1">
+                <span className="text-[9px] bg-zinc-850 text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 rounded font-bold font-mono">CANCHA 2 PRACTICAS</span>
+                <p className="text-white font-bold mt-1">Bambis vs Juventus</p>
+                <p className="text-gray-500 text-[10px]">Horario: 12:20 PM • Domingo</p>
+              </div>
+              <div className="bg-zinc-950/50 p-3 rounded-xl border border-zinc-900 space-y-1">
+                <span className="text-[9px] bg-zinc-850 text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 rounded font-bold font-mono">CANCHA 2 PRACTICAS</span>
+                <p className="text-white font-bold mt-1">Del Valle vs Real Madrid</p>
+                <p className="text-gray-500 text-[10px]">Horario: 2:20 PM • Domingo</p>
+              </div>
+              <div className="bg-zinc-950/50 p-3 rounded-xl border border-zinc-900 space-y-1">
+                <span className="text-[9px] bg-zinc-850 text-emerald-400 border border-emerald-500/20 px-1.5 py-0.5 rounded font-bold font-mono">CANCHA 1 PRACTICAS</span>
+                <p className="text-white font-bold mt-1">Sin Nombre vs River (3:00) • Ajax vs Mexico (3:40)</p>
+                <p className="text-gray-500 text-[10px]">Inicio bloques vespertinos prácticos de fútbol base</p>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      )}
 
     </div>
   );

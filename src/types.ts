@@ -64,6 +64,17 @@ export interface Photo {
   uploadedAt: string;
 }
 
+export interface Video {
+  id: string;
+  title: string;
+  url: string;
+  thumbnailUrl: string;
+  category: 'live' | 'highlight' | 'full_match';
+  isLive: boolean;
+  views: number;
+  uploadedAt: string;
+}
+
 export interface Team {
   id: string;
   name: string;

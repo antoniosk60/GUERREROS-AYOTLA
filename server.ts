@@ -2,7 +2,7 @@ import express from 'express';
 import path from 'path';
 import { createServer as createViteServer } from 'vite';
 import { dbStore, signToken, verifyToken, FIELDS } from './server/dbStore';
-import { Reservation, Payment, Promotion, Photo, User, Team, Player, Review } from './src/types';
+import { Reservation, Payment, Promotion, Photo, Video, User, Team, Player, Review } from './src/types';
 import { sendReservationWhatsApp, generateEntryCode } from './server/twilioService';
 
 
@@ -53,7 +53,7 @@ async function startServer() {
     const emailLower = email.toLowerCase();
 
     // Default testing configuration for Admin
-    if (emailLower === 'angelantonioflore837@gmail.com' && password === '2203306181') {
+    if (emailLower === 'admin@canchafutbol.com' && password === 'admin') {
       const adminUser = dbStore.getUserById('admin-01');
       if (adminUser) {
         const token = signToken({ id: adminUser.id, email: adminUser.email, role: adminUser.role });
@@ -352,6 +352,61 @@ async function startServer() {
       return res.status(404).json({ message: 'Imagen no encontrada.' });
     }
     res.json({ success: true, message: 'Imagen eliminada exitosamente del catálogo.' });
+  });
+
+  // 6.5 Videos API
+  app.get('/api/videos', (req, res) => {
+    res.json(dbStore.getVideos());
+  });
+
+  app.post('/api/videos', requireAdmin, (req, res) => {
+    const { title, url, thumbnailUrl, category, isLive } = req.body;
+
+    if (!title || !url) {
+      return res.status(400).json({ message: 'El título y la URL del video son obligatorios.' });
+    }
+
+    const newVideo: Video = {
+      id: 'vid-' + Math.random().toString(36).substr(2, 9),
+      title,
+      url,
+      thumbnailUrl: thumbnailUrl || 'https://images.unsplash.com/photo-1544698310-74ea9d1c8258?q=80&w=400',
+      category: category || 'highlight',
+      isLive: !!isLive,
+      views: 0,
+      uploadedAt: new Date().toISOString()
+    };
+
+    const saved = dbStore.addVideo(newVideo);
+    res.status(201).json(saved);
+  });
+
+  app.put('/api/videos/:id', requireAdmin, (req, res) => {
+    const { id } = req.params;
+    const { title, url, thumbnailUrl, category, isLive } = req.body;
+
+    const updated = dbStore.updateVideo(id, {
+      title,
+      url,
+      thumbnailUrl,
+      category,
+      isLive: isLive !== undefined ? !!isLive : undefined
+    });
+
+    if (!updated) {
+      return res.status(404).json({ message: 'Video no encontrado.' });
+    }
+
+    res.json(updated);
+  });
+
+  app.delete('/api/videos/:id', requireAdmin, (req, res) => {
+    const { id } = req.params;
+    const deleted = dbStore.deleteVideo(id);
+    if (!deleted) {
+      return res.status(404).json({ message: 'Video no encontrado.' });
+    }
+    res.json({ success: true, message: 'Video eliminado exitosamente.' });
   });
 
   // 7. Teams (Equipos) API

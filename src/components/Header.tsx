@@ -84,11 +84,15 @@ export default function Header({
             onClick={() => setCurrentPage('inicio')} 
             className="flex items-center space-x-3 cursor-pointer group"
           >
-            <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-black p-2.5 rounded-xl font-bold flex items-center justify-center transition-transform group-hover:scale-105 duration-200 shadow-[0_0_15px_rgba(16,185,129,0.35)]">
-              <Trophy className="w-6 h-6 stroke-[2.5]" />
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center transition-transform group-hover:scale-105 duration-200 overflow-hidden border border-emerald-500/25 shadow-[0_0_15px_rgba(16,185,129,0.4)]">
+              <img 
+                src="/src/assets/images/guerreros_ayotla_logo_1780307463046.png" 
+                alt="Guerreros Ayotla Logo" 
+                className="w-full h-full object-cover"
+                referrerPolicy="no-referrer"
+              />
             </div>
             <div className="flex items-center gap-2">
-              <span className="text-2xl sm:text-3xl select-none animate-bounce">🐢</span>
               <div>
                 <span className="font-display font-extrabold text-lg sm:text-2xl tracking-wider text-white flex items-center leading-none">
                   GUERREROS<span className="text-amber-400 font-extrabold font-mono ml-1">AYOTLA</span>

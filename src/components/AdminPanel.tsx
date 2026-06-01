@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, Calendar, Sparkles, Image as ImageIcon, Users, DollarSign, Clock, ShieldAlert, Plus, Trash2, CheckCircle, XCircle, Search, Edit3, Shield, User, Save, RefreshCw, Star, MessageSquare } from 'lucide-react';
-import { Reservation, Promotion, Photo, Team, Player, AppStats, FieldConfig, Review } from '../types';
+import { LayoutDashboard, Calendar, Sparkles, Image as ImageIcon, Users, DollarSign, Clock, ShieldAlert, Plus, Trash2, CheckCircle, XCircle, Search, Edit3, Shield, User, Save, RefreshCw, Star, MessageSquare, Filter, Film, Play } from 'lucide-react';
+import { ResponsiveContainer, BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, PieChart, Pie, AreaChart, Area } from 'recharts';
+import { Reservation, Promotion, Photo, Team, Player, AppStats, FieldConfig, Review, Video } from '../types';
 
 interface AdminPanelProps {
   token: string | null;
@@ -9,10 +10,13 @@ interface AdminPanelProps {
 
 export default function AdminPanel({ token, onLogout }: AdminPanelProps) {
   const [activeTab, setActiveTab] = useState<'kpi' | 'bookings' | 'promos' | 'gallery' | 'teams' | 'reviews'>('kpi');
+  const [gallerySubTab, setGallerySubTab] = useState<'photos' | 'videos'>('photos');
+  const [selectedMonthFilter, setSelectedMonthFilter] = useState<string>('all');
   const [stats, setStats] = useState<AppStats | null>(null);
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   const [photos, setPhotos] = useState<Photo[]>([]);
+  const [videos, setVideos] = useState<Video[]>([]);
   const [teams, setTeams] = useState<Team[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -37,6 +41,14 @@ export default function AdminPanel({ token, onLogout }: AdminPanelProps) {
   const [photoCaption, setPhotoCaption] = useState('');
   const [photoCategory, setPhotoCategory] = useState<'facilities' | 'matches' | 'events'>('facilities');
 
+  // Video Management Form State
+  const [editingVideoId, setEditingVideoId] = useState<string | null>(null);
+  const [videoTitle, setVideoTitle] = useState('');
+  const [videoUrl, setVideoUrl] = useState('');
+  const [videoThumbnailUrl, setVideoThumbnailUrl] = useState('');
+  const [videoCategory, setVideoCategory] = useState<'live' | 'highlight' | 'full_match'>('highlight');
+  const [videoIsLive, setVideoIsLive] = useState(false);
+
   // 3. Team Management Form State
   const [showTeamForm, setShowTeamForm] = useState(false);
   const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
@@ -54,6 +66,103 @@ export default function AdminPanel({ token, onLogout }: AdminPanelProps) {
   const [playerPosition, setPlayerPosition] = useState('Delantero');
   const [playerContact, setPlayerContact] = useState('');
 
+  // Dynamic Month Extractor from Reservations list
+  const availableMonths = React.useMemo(() => {
+    const monthsSet = new Set<string>();
+    reservations.forEach(res => {
+      if (res.date && res.date.length >= 7) {
+        const yearMonth = res.date.substring(0, 7); // e.g. "2026-06"
+        monthsSet.add(yearMonth);
+      }
+    });
+    // Ensure at least current month and maybe some others exist
+    const currentMonth = new Date().toISOString().substring(0, 7);
+    monthsSet.add(currentMonth);
+    return Array.from(monthsSet).sort((a, b) => b.localeCompare(a)); // Descending order (newest months first)
+  }, [reservations]);
+
+  const getMonthLabel = (yearMonthStr: string) => {
+    if (yearMonthStr === 'all') return 'Todos los Meses';
+    const [year, month] = yearMonthStr.split('-');
+    const monthNames = [
+      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+    ];
+    const monthIdx = parseInt(month, 10) - 1;
+    return `${monthNames[monthIdx] || month} ${year}`;
+  };
+
+  // Filtered reservations based on month select
+  const filteredReservationsByMonth = React.useMemo(() => {
+    if (selectedMonthFilter === 'all') {
+      return reservations;
+    }
+    return reservations.filter(res => res.date && res.date.startsWith(selectedMonthFilter));
+  }, [reservations, selectedMonthFilter]);
+
+  // Aggregated data 1: Bookings count and Income by field/cancha
+  const fieldSummaryData = React.useMemo(() => {
+    const summary: Record<string, { name: string; reservas: number; ingresos: number }> = {};
+    
+    filteredReservationsByMonth.forEach(res => {
+      if (res.status === 'cancelled') return; // skip cancelled
+      const fName = res.fieldName || 'Cancha General';
+      if (!summary[fName]) {
+        summary[fName] = { name: fName, reservas: 0, ingresos: 0 };
+      }
+      summary[fName].reservas += 1;
+      summary[fName].ingresos += res.totalPrice || 0;
+    });
+
+    return Object.values(summary);
+  }, [filteredReservationsByMonth]);
+
+  // Aggregated data 2: Monthly income or daily income distribution
+  const incomeTrendData = React.useMemo(() => {
+    if (selectedMonthFilter === 'all') {
+      // Group by month
+      const monthlyTotals: Record<string, { dateLabel: string; total: number; bookings: number; rawKey: string }> = {};
+      reservations.forEach(res => {
+        if (res.status === 'cancelled') return;
+        const monthKey = res.date ? res.date.substring(0, 7) : 'Sin Fecha';
+        if (!monthlyTotals[monthKey]) {
+          monthlyTotals[monthKey] = {
+            dateLabel: getMonthLabel(monthKey),
+            total: 0,
+            bookings: 0,
+            rawKey: monthKey
+          };
+        }
+        monthlyTotals[monthKey].total += res.totalPrice || 0;
+        monthlyTotals[monthKey].bookings += 1;
+      });
+      return Object.values(monthlyTotals).sort((a, b) => a.rawKey.localeCompare(b.rawKey));
+    } else {
+      // Group by day of selected month
+      const dailyTotals: Record<string, { dateLabel: string; total: number; bookings: number; rawKey: string }> = {};
+      
+      filteredReservationsByMonth.forEach(res => {
+        if (res.status === 'cancelled') return;
+        const dateStr = res.date || ''; // YYYY-MM-DD
+        const dayPart = dateStr.substring(8, 10) || '01';
+        if (!dailyTotals[dateStr]) {
+          dailyTotals[dateStr] = {
+            dateLabel: `${dayPart} ${getMonthLabel(selectedMonthFilter).split(' ')[0]}`,
+            total: 0,
+            bookings: 0,
+            rawKey: dateStr
+          };
+        }
+        dailyTotals[dateStr].total += res.totalPrice || 0;
+        dailyTotals[dateStr].bookings += 1;
+      });
+
+      return Object.values(dailyTotals).sort((a, b) => a.rawKey.localeCompare(b.rawKey));
+    }
+  }, [reservations, filteredReservationsByMonth, selectedMonthFilter]);
+
+  const COLORS_PALETTE = ['#10b981', '#3b82f6', '#f59e0b', '#ec4899', '#8b5cf6'];
+
   // General Fetch Engine
   const fetchAllAdminData = async () => {
     if (!token) return;
@@ -61,11 +170,12 @@ export default function AdminPanel({ token, onLogout }: AdminPanelProps) {
     try {
       const headers = { 'Authorization': `Bearer ${token}` };
       
-      const [resStats, resReservations, resPromos, resPhotos, resTeams, resPlayers, resReviews] = await Promise.all([
+      const [resStats, resReservations, resPromos, resPhotos, resVideos, resTeams, resPlayers, resReviews] = await Promise.all([
         fetch('/api/stats', { headers }),
         fetch('/api/reservations'),
         fetch('/api/promotions/all', { headers }),
         fetch('/api/gallery'),
+        fetch('/api/videos'),
         fetch('/api/teams'),
         fetch('/api/players'),
         fetch('/api/reviews/admin', { headers })
@@ -75,6 +185,7 @@ export default function AdminPanel({ token, onLogout }: AdminPanelProps) {
       if (resReservations.ok) setReservations(await resReservations.json());
       if (resPromos.ok) setPromotions(await resPromos.json());
       if (resPhotos.ok) setPhotos(await resPhotos.json());
+      if (resVideos.ok) setVideos(await resVideos.json());
       if (resTeams.ok) setTeams(await resTeams.json());
       if (resPlayers.ok) setPlayers(await resPlayers.json());
       if (resReviews.ok) setReviews(await resReviews.json());
@@ -287,6 +398,86 @@ export default function AdminPanel({ token, onLogout }: AdminPanelProps) {
       });
       if (response.ok) {
         fetchAllAdminData();
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  // Videos CRUD Handlers
+  const handleAddOrEditVideoSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!videoTitle || !videoUrl) return;
+
+    try {
+      const isEditing = !!editingVideoId;
+      const url = isEditing ? `/api/videos/${editingVideoId}` : '/api/videos';
+      const method = isEditing ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          title: videoTitle,
+          url: videoUrl,
+          thumbnailUrl: videoThumbnailUrl || 'https://images.unsplash.com/photo-1544698310-74ea9d1c8258?q=80&w=400',
+          category: videoCategory,
+          isLive: videoIsLive
+        })
+      });
+
+      if (response.ok) {
+        setVideoTitle('');
+        setVideoUrl('');
+        setVideoThumbnailUrl('');
+        setVideoCategory('highlight');
+        setVideoIsLive(false);
+        setEditingVideoId(null);
+        fetchAllAdminData();
+      } else {
+        const errData = await response.json().catch(() => ({}));
+        alert(errData.message || 'Error al guardar video.');
+      }
+    } catch (err) {
+      console.error('Error saving video:', err);
+    }
+  };
+
+  const handleSelectEditVideo = (video: Video) => {
+    setEditingVideoId(video.id);
+    setVideoTitle(video.title);
+    setVideoUrl(video.url);
+    setVideoThumbnailUrl(video.thumbnailUrl);
+    setVideoCategory(video.category);
+    setVideoIsLive(video.isLive);
+  };
+
+  const handleCancelEditVideo = () => {
+    setEditingVideoId(null);
+    setVideoTitle('');
+    setVideoUrl('');
+    setVideoThumbnailUrl('');
+    setVideoCategory('highlight');
+    setVideoIsLive(false);
+  };
+
+  const handleDeleteVideo = async (id: string) => {
+    if (!confirm('¿Eliminar este video de la Videoteca permanentemente?')) return;
+    try {
+      const response = await fetch(`/api/videos/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        if (editingVideoId === id) {
+          handleCancelEditVideo();
+        }
+        fetchAllAdminData();
+      } else {
+        alert('Error al eliminar video.');
       }
     } catch (e) {
       console.error(e);
@@ -559,6 +750,197 @@ export default function AdminPanel({ token, onLogout }: AdminPanelProps) {
                   <p className="text-[10px] text-emerald-400/80 mt-1 font-mono">Fichas de identificación</p>
                 </div>
 
+              </div>
+
+              {/* SECTION: CHARTS AND GRAPHS */}
+              <div className="glass-panel p-6 rounded-2xl border border-emerald-950/40 space-y-6">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-zinc-900/60 pb-4">
+                  <div className="space-y-1">
+                    <h3 className="font-display font-bold text-base text-white flex items-center gap-2">
+                      <LayoutDashboard className="w-5 h-5 text-emerald-400" />
+                      Análisis de Rendimiento & Gráficos
+                    </h3>
+                    <p className="text-[11px] text-gray-400 font-sans">
+                      Monitorea el uso de las canchas y el flujo de caja del complejo deportivo.
+                    </p>
+                  </div>
+                  
+                  {/* Select Dropdown to filter month */}
+                  <div className="flex items-center space-x-2 bg-zinc-900 border border-zinc-800 px-3 py-1.5 rounded-xl self-start sm:self-center">
+                    <Filter className="w-3.5 h-3.5 text-emerald-400" />
+                    <select
+                      value={selectedMonthFilter}
+                      onChange={(e) => setSelectedMonthFilter(e.target.value)}
+                      className="bg-transparent text-xs text-white border-0 outline-none focus:ring-0 cursor-pointer text-left mr-1 font-mono pr-2"
+                    >
+                      <option value="all" className="bg-zinc-950 text-white">Todos los meses</option>
+                      {availableMonths.map((ym) => (
+                        <option key={ym} value={ym} className="bg-zinc-950 text-white">
+                          {getMonthLabel(ym)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Micro KPIs for the filtered period */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="bg-zinc-950/40 p-4 rounded-xl border border-zinc-900 text-left">
+                    <span className="text-[9px] font-mono tracking-wider text-gray-500 uppercase block">Reservas (Período)</span>
+                    <strong className="text-xl font-display text-emerald-400 block mt-1">
+                      {filteredReservationsByMonth.filter(r => r.status !== 'cancelled').length} juegos
+                    </strong>
+                    <span className="text-[8px] text-gray-500 font-mono">Excluye cancelados</span>
+                  </div>
+
+                  <div className="bg-zinc-950/40 p-4 rounded-xl border border-zinc-900 text-left">
+                    <span className="text-[9px] font-mono tracking-wider text-gray-500 uppercase block">Ingresos (Período)</span>
+                    <strong className="text-xl font-display text-white block mt-1">
+                      ${filteredReservationsByMonth.filter(r => r.status !== 'cancelled').reduce((acc, curr) => acc + (curr.totalPrice || 0), 0)} MXN
+                    </strong>
+                    <span className="text-[8px] text-emerald-500/70 font-mono">Monto recaudado</span>
+                  </div>
+
+                  <div className="bg-zinc-950/40 p-4 rounded-xl border border-zinc-900 text-left">
+                    <span className="text-[9px] font-mono tracking-wider text-gray-500 uppercase block">Surcharge Iluminación</span>
+                    <strong className="text-xl font-display text-amber-500 block mt-1">
+                      ${filteredReservationsByMonth.filter(r => r.status !== 'cancelled' && r.hasLights).length * 150} MXN
+                    </strong>
+                    <span className="text-[8px] text-gray-500 font-mono">Cobro luz nocturna</span>
+                  </div>
+
+                  <div className="bg-zinc-950/40 p-4 rounded-xl border border-zinc-900 text-left">
+                    <span className="text-[9px] font-mono tracking-wider text-gray-500 uppercase block">Cancelaciones</span>
+                    <strong className="text-xl font-display text-rose-500 block mt-1">
+                      {filteredReservationsByMonth.filter(r => r.status === 'cancelled').length} reservas
+                    </strong>
+                    <span className="text-[8px] text-rose-500/60 font-mono">Estatus 'cancelled'</span>
+                  </div>
+                </div>
+
+                {/* The Charts Grid */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pt-2">
+                  
+                  {/* BAR CHART: Bookings count per cancha */}
+                  <div className="bg-zinc-950/20 p-5 rounded-2xl border border-zinc-900/40 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-xs font-bold font-mono uppercase tracking-wider text-gray-300">
+                        📍 Reservas por Cancha
+                      </h4>
+                      <span className="text-[10px] bg-emerald-500/10 text-emerald-400 px-2.5 py-0.5 rounded font-mono">
+                        Volumen total
+                      </span>
+                    </div>
+
+                    {fieldSummaryData.length === 0 ? (
+                      <div className="h-64 flex items-center justify-center text-xs text-gray-500 font-mono">
+                        Sin datos de reservaciones para graficar.
+                      </div>
+                    ) : (
+                      <div className="h-64 w-full text-xs font-sans">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart
+                            data={fieldSummaryData}
+                            margin={{ top: 10, right: 10, left: -25, bottom: 0 }}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" vertical={false} />
+                            <XAxis 
+                              dataKey="name" 
+                              stroke="#6b7280" 
+                              fontSize={10} 
+                              tickLine={false} 
+                            />
+                            <YAxis 
+                              stroke="#6b7280" 
+                              fontSize={10} 
+                              tickLine={false}
+                              allowDecimals={false}
+                            />
+                            <Tooltip
+                              contentStyle={{ backgroundColor: '#09090b', borderColor: '#1f2937', borderRadius: '12px', color: '#fff' }}
+                              labelStyle={{ fontWeight: 'bold', color: '#10b981' }}
+                            />
+                            <Legend wrapperStyle={{ fontSize: '10px', paddingTop: '10px' }} />
+                            <Bar 
+                              dataKey="reservas" 
+                              name="Reservaciones" 
+                              radius={[6, 6, 0, 0]}
+                            >
+                              {fieldSummaryData.map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={COLORS_PALETTE[index % COLORS_PALETTE.length]} />
+                              ))}
+                            </Bar>
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* AREA CHART: Monthly Revenue trend or Daily Revenue breakdown */}
+                  <div className="bg-zinc-950/20 p-5 rounded-2xl border border-zinc-900/40 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-xs font-bold font-mono uppercase tracking-wider text-gray-300">
+                        {selectedMonthFilter === 'all' 
+                          ? '📈 Distribución de Ingresos Mensuales' 
+                          : `📈 Distribución de Ingresos de ${getMonthLabel(selectedMonthFilter)}`
+                        }
+                      </h4>
+                      <span className="text-[10px] bg-blue-500/10 text-blue-400 px-2.5 py-0.5 rounded font-mono">
+                        {selectedMonthFilter === 'all' ? 'Tendencia' : 'Por Día'}
+                      </span>
+                    </div>
+
+                    {incomeTrendData.length === 0 ? (
+                      <div className="h-64 flex items-center justify-center text-xs text-gray-500 font-mono">
+                        No hay ingresos registrados en este período.
+                      </div>
+                    ) : (
+                      <div className="h-64 w-full text-xs font-sans">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <AreaChart
+                            data={incomeTrendData}
+                            margin={{ top: 10, right: 10, left: -15, bottom: 0 }}
+                          >
+                            <defs>
+                              <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#10b981" stopOpacity={0.2}/>
+                                <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" vertical={false} />
+                            <XAxis 
+                              dataKey="dateLabel" 
+                              stroke="#6b7280" 
+                              fontSize={9} 
+                              tickLine={false} 
+                            />
+                            <YAxis 
+                              stroke="#6b7280" 
+                              fontSize={10} 
+                              tickLine={false}
+                              tickFormatter={(val) => `$${val}`}
+                            />
+                            <Tooltip
+                              contentStyle={{ backgroundColor: '#09090b', borderColor: '#1f2937', borderRadius: '12px', color: '#fff' }}
+                              labelStyle={{ fontWeight: 'bold', color: '#3b82f6' }}
+                              formatter={(value) => [`$${value} MXN`, 'Ingresos']}
+                            />
+                            <Area 
+                              type="monotone" 
+                              dataKey="total" 
+                              name="Total Ingresos ($)" 
+                              stroke="#10b981" 
+                              fillOpacity={1} 
+                              fill="url(#colorTotal)" 
+                              strokeWidth={2}
+                            />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      </div>
+                    )}
+                  </div>
+
+                </div>
               </div>
 
               {/* Recent Bookings Roster */}
@@ -1115,91 +1497,299 @@ export default function AdminPanel({ token, onLogout }: AdminPanelProps) {
 
           {/* TAB 5: Gallery photo additions */}
           {activeTab === 'gallery' && (
-            <div className="space-y-8 animate-fadeIn">
+            <div className="space-y-8 animate-fadeIn text-left">
               
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                
-                {/* Form to submit */}
-                <div className="lg:col-span-5 glass-panel p-6 rounded-2xl border border-gray-800 text-left space-y-4">
-                  <h3 className="font-display font-bold text-base text-white">Cargar Foto de Evento o Campo</h3>
-                  
-                  <form onSubmit={handleAddPhotoSubmit} className="space-y-4">
-                    <div>
-                      <label className="block text-[10px] text-gray-400 font-mono mb-1">Enlace de Imagen (URL Directa Unsplash u otra) *</label>
-                      <input
-                        type="url"
-                        required
-                        placeholder="https://images.unsplash.com/photo-..."
-                        value={photoUrl}
-                        onChange={(e) => setPhotoUrl(e.target.value)}
-                        className="w-full bg-emerald-950/20 text-white text-xs p-2.5 rounded-lg border border-gray-800"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[10px] text-gray-400 font-mono mb-1">Título de Pie de Foto / Título *</label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="Ej. Clausura de la Copa Nocturna"
-                        value={photoCaption}
-                        onChange={(e) => setPhotoCaption(e.target.value)}
-                        className="w-full bg-emerald-950/20 text-white text-xs p-2.5 rounded-lg border border-gray-800"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[10px] text-gray-400 font-mono mb-1">Categoría</label>
-                      <select
-                        value={photoCategory}
-                        onChange={(e) => setPhotoCategory(e.target.value as any)}
-                        className="w-full bg-emerald-950/20 text-white text-xs p-2.5 rounded-lg border border-gray-800 cursor-pointer"
-                      >
-                        <option value="facilities">Infraestructura (Canchas)</option>
-                        <option value="matches font-medium">Partidos / Juegos nocturnos</option>
-                        <option value="events">Torneos y Premiaciones</option>
-                      </select>
-                    </div>
-
-                    <button
-                      type="submit"
-                      className="w-full bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs py-3 rounded-lg uppercase tracking-wider transition-colors cursor-pointer"
-                    >
-                      Agregar al Catálogo Público
-                    </button>
-                  </form>
-                </div>
-
-                {/* Grid gallery review list */}
-                <div className="lg:col-span-7 space-y-4">
-                  <h3 className="font-display font-bold text-base text-white">Fotos en Catálogo Público ({photos.length})</h3>
-                  
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                    {photos.map((pt) => {
-                      return (
-                        <div key={pt.id} className="relative rounded-xl overflow-hidden h-28 group border border-gray-800">
-                          <img src={pt.url} alt={pt.caption} className="w-full h-full object-cover" />
-                          
-                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-1">
-                            <button
-                              onClick={() => handleDeletePhoto(pt.id)}
-                              className="p-1.5 rounded-full bg-red-600/90 text-white hover:bg-red-700 font-bold flex items-center justify-center transition-all cursor-pointer"
-                              title="Eliminar de Galería"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-
-                          <span className="absolute bottom-1 left-2 text-[9px] bg-black/70 px-1 py-0.5 rounded text-white font-sans max-w-[85px] truncate">
-                            {pt.caption}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
+              {/* Gallery Sub-tab selectors */}
+              <div className="flex border-b border-zinc-800 space-x-2">
+                <button
+                  type="button"
+                  onClick={() => setGallerySubTab('photos')}
+                  className={`px-4 py-2.5 border-b-2 font-display font-bold text-xs uppercase tracking-wider transition-all cursor-pointer ${
+                    gallerySubTab === 'photos'
+                      ? 'border-emerald-500 text-emerald-400'
+                      : 'border-transparent text-gray-500 hover:text-white'
+                  }`}
+                >
+                  📸 Fotos del Complejo ({photos.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setGallerySubTab('videos')}
+                  className={`px-4 py-2.5 border-b-2 font-display font-bold text-xs uppercase tracking-wider transition-all cursor-pointer ${
+                    gallerySubTab === 'videos'
+                      ? 'border-emerald-500 text-emerald-400'
+                      : 'border-transparent text-gray-500 hover:text-white'
+                  }`}
+                >
+                  🎥 Videoteca de Goles ({videos.length})
+                </button>
               </div>
+
+              {gallerySubTab === 'photos' ? (
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                  
+                  {/* Form to submit */}
+                  <div className="lg:col-span-5 glass-panel p-6 rounded-2xl border border-gray-800 text-left space-y-4">
+                    <h3 className="font-display font-bold text-base text-white">Cargar Foto de Evento o Campo</h3>
+                    
+                    <form onSubmit={handleAddPhotoSubmit} className="space-y-4">
+                      <div>
+                        <label className="block text-[10px] text-gray-400 font-mono mb-1">Enlace de Imagen (URL Directa Unsplash u otra) *</label>
+                        <input
+                          type="url"
+                          required
+                          placeholder="https://images.unsplash.com/photo-..."
+                          value={photoUrl}
+                          onChange={(e) => setPhotoUrl(e.target.value)}
+                          className="w-full bg-emerald-950/20 text-white text-xs p-2.5 rounded-lg border border-gray-800"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] text-gray-400 font-mono mb-1">Título de Pie de Foto / Título *</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="Ej. Clausura de la Copa Nocturna"
+                          value={photoCaption}
+                          onChange={(e) => setPhotoCaption(e.target.value)}
+                          className="w-full bg-emerald-950/20 text-white text-xs p-2.5 rounded-lg border border-gray-800"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] text-gray-400 font-mono mb-1">Categoría</label>
+                        <select
+                          value={photoCategory}
+                          onChange={(e) => setPhotoCategory(e.target.value as any)}
+                          className="w-full bg-emerald-950/20 text-white text-xs p-2.5 rounded-lg border border-gray-800 cursor-pointer"
+                        >
+                          <option value="facilities">Infraestructura (Canchas)</option>
+                          <option value="matches">Partidos / Juegos nocturnos</option>
+                          <option value="events">Torneos y Premiaciones</option>
+                        </select>
+                      </div>
+
+                      <button
+                        type="submit"
+                        className="w-full bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs py-3 rounded-lg uppercase tracking-wider transition-colors cursor-pointer"
+                      >
+                        Agregar al Catálogo Público
+                      </button>
+                    </form>
+                  </div>
+
+                  {/* Grid gallery review list */}
+                  <div className="lg:col-span-7 space-y-4">
+                    <h3 className="font-display font-bold text-base text-white">Fotos en Catálogo Público ({photos.length})</h3>
+                    
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                      {photos.map((pt) => {
+                        return (
+                          <div key={pt.id} className="relative rounded-xl overflow-hidden h-28 group border border-gray-800">
+                            <img src={pt.url} alt={pt.caption} className="w-full h-full object-cover" />
+                            
+                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center gap-1">
+                              <button
+                                onClick={() => handleDeletePhoto(pt.id)}
+                                className="p-1.5 rounded-full bg-red-600/90 text-white hover:bg-red-700 font-bold flex items-center justify-center transition-all cursor-pointer"
+                                title="Eliminar de Galería"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+
+                            <span className="absolute bottom-1 left-2 text-[9px] bg-black/70 px-1 py-0.5 rounded text-white font-sans max-w-[85px] truncate text-left">
+                              {pt.caption}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                  
+                  {/* Form to submit/edit video */}
+                  <div className="lg:col-span-5 glass-panel p-6 rounded-2xl border border-gray-800 text-left space-y-4">
+                    <div className="flex items-center justify-between border-b border-zinc-800/60 pb-3">
+                      <h3 className="font-display font-bold text-base text-white flex items-center gap-2">
+                        <Film className="w-4 h-4 text-emerald-400" />
+                        {editingVideoId ? 'Editar Video de Goles' : 'Cargar Video de Evento'}
+                      </h3>
+                      {editingVideoId && (
+                        <button
+                          type="button"
+                          onClick={handleCancelEditVideo}
+                          className="text-[10px] text-amber-500 hover:text-amber-400 font-mono bg-zinc-900 border border-amber-500/20 px-2 py-1 rounded"
+                        >
+                          Cancelar
+                        </button>
+                      )}
+                    </div>
+                    
+                    <form onSubmit={handleAddOrEditVideoSubmit} className="space-y-4">
+                      <div>
+                        <label className="block text-[10px] text-gray-400 font-mono mb-1">Título / Nombre del Video *</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="Ej. Goles de Antología - Jornada 10"
+                          value={videoTitle}
+                          onChange={(e) => setVideoTitle(e.target.value)}
+                          className="w-full bg-emerald-950/20 text-white text-xs p-2.5 rounded-lg border border-gray-800 focus:border-emerald-500 outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] text-gray-400 font-mono mb-1">Enlace del Video (YouTube o URL Directa) *</label>
+                        <input
+                          type="url"
+                          required
+                          placeholder="https://www.youtube.com/watch?v=..."
+                          value={videoUrl}
+                          onChange={(e) => setVideoUrl(e.target.value)}
+                          className="w-full bg-emerald-950/20 text-white text-xs p-2.5 rounded-lg border border-gray-800 focus:border-emerald-500 outline-none font-mono"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-[10px] text-gray-400 font-mono mb-1 font-sans">Portada / Miniatura (URL de Imagen - Opcional)</label>
+                        <input
+                          type="url"
+                          placeholder="https://images.unsplash.com/photo-... (vacío para usar genérica)"
+                          value={videoThumbnailUrl}
+                          onChange={(e) => setVideoThumbnailUrl(e.target.value)}
+                          className="w-full bg-emerald-950/20 text-white text-xs p-2.5 rounded-lg border border-gray-800 focus:border-emerald-500 outline-none font-mono"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-[10px] text-gray-400 font-mono mb-1">Categoría</label>
+                          <select
+                            value={videoCategory}
+                            onChange={(e) => setVideoCategory(e.target.value as any)}
+                            className="w-full bg-emerald-950/20 text-white text-xs p-2.5 rounded-lg border border-gray-800 cursor-pointer focus:border-emerald-500 outline-none"
+                          >
+                            <option value="highlight">Resumen / Goles Highlights</option>
+                            <option value="full_match">Partido Completo</option>
+                            <option value="live">Transmisión En Vivo</option>
+                          </select>
+                        </div>
+
+                        <div className="flex flex-col justify-end pb-3 pl-1">
+                          <label className="flex items-center space-x-2 text-[11px] text-gray-300 font-mono cursor-pointer select-none">
+                            <input
+                              type="checkbox"
+                              checked={videoIsLive}
+                              onChange={(e) => setVideoIsLive(e.target.checked)}
+                              className="accent-emerald-500 w-4 h-4 rounded text-emerald-500 border-zinc-700 bg-zinc-900 focus:ring-0"
+                            />
+                            <span>¿Transmitiendo En Vivo?</span>
+                          </label>
+                        </div>
+                      </div>
+
+                      <button
+                        type="submit"
+                        className="w-full bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold text-xs py-3 rounded-lg uppercase tracking-wider transition-colors cursor-pointer"
+                      >
+                        {editingVideoId ? 'Actualizar Video' : 'Registrar en Videoteca'}
+                      </button>
+                    </form>
+                  </div>
+
+                  {/* Video Grid list */}
+                  <div className="lg:col-span-7 space-y-4">
+                    <h3 className="font-display font-bold text-base text-white">Videos de Goles en Videoteca ({videos.length})</h3>
+
+                    {videos.length === 0 ? (
+                      <div className="p-12 text-center bg-emerald-950/5 border border-dashed border-zinc-850 rounded-2xl">
+                        <p className="text-xs text-gray-400 font-mono">No hay videos guardados en este momento.</p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {videos.map((vid) => {
+                          return (
+                            <div key={vid.id} className="bg-zinc-950/30 border border-zinc-900 rounded-xl overflow-hidden flex flex-col justify-between">
+                              <div className="relative h-28 bg-black/40 group">
+                                <img
+                                  src={vid.thumbnailUrl}
+                                  alt={vid.title}
+                                  className="w-full h-full object-cover opacity-80"
+                                  onError={(e) => {
+                                    e.currentTarget.src = "https://images.unsplash.com/photo-1544698310-74ea9d1c8258?q=80&w=400";
+                                  }}
+                                />
+                                <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                                  <div className="w-9 h-9 rounded-full bg-black/80 flex items-center justify-center border border-emerald-500/30">
+                                    <Play className="w-3.5 h-3.5 text-emerald-400 ml-0.5 fill-emerald-400" />
+                                  </div>
+                                </div>
+
+                                <div className="absolute top-2 left-2 flex gap-1 flex-wrap">
+                                  <span className="text-[8px] bg-emerald-500 text-black font-mono px-2 py-0.5 rounded font-bold uppercase">
+                                    {vid.category === 'live' ? 'En Vivo' : vid.category === 'full_match' ? 'Completo' : 'Resumen'}
+                                  </span>
+                                  {vid.isLive && (
+                                    <span className="text-[8px] bg-rose-600 text-white font-mono px-2 py-0.5 rounded font-bold uppercase animate-pulse flex items-center gap-1">
+                                      <span className="w-1 h-1 rounded-full bg-white block"></span>
+                                      Live
+                                    </span>
+                                  )}
+                                </div>
+
+                                <span className="absolute bottom-2 right-2 text-[9px] bg-black/80 px-1.5 py-0.5 rounded text-gray-300 font-mono">
+                                  👁️ {vid.views || 0} visitas
+                                </span>
+                              </div>
+
+                              <div className="p-3 bg-zinc-900/10 flex-1 flex flex-col justify-between space-y-3">
+                                <div className="text-left">
+                                  <h4 className="text-xs font-bold text-white line-clamp-2 leading-snug">{vid.title}</h4>
+                                  <span className="text-[9px] text-gray-500 font-mono block truncate mt-1" title={vid.url}>
+                                    {vid.url}
+                                  </span>
+                                </div>
+
+                                <div className="flex items-center justify-between border-t border-zinc-900/60 pt-2.5">
+                                  <span className="text-[9px] text-gray-500 font-mono">
+                                    {vid.uploadedAt ? new Date(vid.uploadedAt).toLocaleDateString('es-MX') : 'Reciente'}
+                                  </span>
+
+                                  <div className="flex items-center space-x-1.5">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleSelectEditVideo(vid)}
+                                      className="p-1 px-2 rounded bg-amber-500/10 text-amber-400 hover:bg-amber-500 hover:text-black font-semibold text-[9px] flex items-center gap-1 transition-all cursor-pointer"
+                                      title="Editar video"
+                                    >
+                                      <Edit3 className="w-3 h-3" />
+                                      <span>Editar</span>
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteVideo(vid.id)}
+                                      className="p-1 rounded bg-red-600/10 text-red-500 hover:bg-red-600 hover:text-white font-bold transition-all cursor-pointer"
+                                      title="Eliminar de la videoteca"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                </div>
+              )}
               
             </div>
           )}

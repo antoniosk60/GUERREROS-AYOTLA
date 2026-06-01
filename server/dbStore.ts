@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
-import { User, Reservation, Payment, Promotion, Photo, FieldConfig, Team, Player, AppStats, Review } from '../src/types';
+import { User, Reservation, Payment, Promotion, Photo, Video, FieldConfig, Team, Player, AppStats, Review } from '../src/types';
 
 const DB_FILE = path.join(process.cwd(), 'database_state.json');
 
@@ -42,6 +42,7 @@ export interface DatabaseSchema {
   payments: Payment[];
   promotions: Promotion[];
   photos: Photo[];
+  videos: Video[];
   teams: Team[];
   players: Player[];
   reviews: Review[];
@@ -180,6 +181,34 @@ const INITIAL_DATA: DatabaseSchema = {
   ],
   photos: [
     {
+      id: 'photo-ayotla-logo',
+      url: '/src/assets/images/guerreros_ayotla_logo_1780307463046.png',
+      caption: 'Escudo e Identidad Visual Oficial de Guerreros Ayotla Fútbol 7',
+      category: 'facilities',
+      uploadedAt: new Date().toISOString()
+    },
+    {
+      id: 'photo-mvp-boy',
+      url: '/src/assets/images/mvp_boy_trophy_1780307479148.png',
+      caption: 'Goleador Estrella Juvenil recibiendo trofeo MVP de la semana en la cancha techada',
+      category: 'events',
+      uploadedAt: new Date().toISOString()
+    },
+    {
+      id: 'photo-copa-campeones',
+      url: '/src/assets/images/copa_campeones_celebration_1780307492915.png',
+      caption: 'Ceremonia de campeón de liga con trofeo de oro y lluvia de confeti',
+      category: 'events',
+      uploadedAt: new Date().toISOString()
+    },
+    {
+      id: 'photo-pina-card',
+      url: '/src/assets/images/pina_goal_card_1780307507932.png',
+      caption: 'Tarjeta coleccionable MVP ¡GOOOOOL! de E. "Piña" López del club Barcelona',
+      category: 'matches',
+      uploadedAt: new Date().toISOString()
+    },
+    {
       id: 'photo-1',
       url: 'https://images.unsplash.com/photo-1544698310-74ea9d1c8258?q=80&w=1000',
       caption: 'Encuentros intensos bajo iluminación LED profesional',
@@ -191,20 +220,6 @@ const INITIAL_DATA: DatabaseSchema = {
       url: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?q=80&w=1000',
       caption: 'Cancha Principal Techada con Pasto Sintético Premium',
       category: 'facilities',
-      uploadedAt: new Date().toISOString()
-    },
-    {
-      id: 'photo-3',
-      url: 'https://images.unsplash.com/photo-1510566337590-2fc1f21d0faa?q=80&w=1000',
-      caption: 'Nuestras gradas listas para recibir a tu afición',
-      category: 'facilities',
-      uploadedAt: new Date().toISOString()
-    },
-    {
-      id: 'photo-4',
-      url: 'https://images.unsplash.com/photo-1579952362864-a623513132a4?q=80&w=1000',
-      caption: 'Final de Copa 2026 - Premiación del equipo Campeón',
-      category: 'events',
       uploadedAt: new Date().toISOString()
     }
   ],
@@ -344,6 +359,38 @@ const INITIAL_DATA: DatabaseSchema = {
       reservationId: 'res-02',
       createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString()
     }
+  ],
+  videos: [
+    {
+      id: 'vid-live-1',
+      title: '🔴 TRANSMISIÓN EN VIVO: Final de Copa Femenil - Real Madrid vs España',
+      url: 'https://assets.mixkit.co/videos/preview/mixkit-playing-soccer-in-the-rain-40348-large.mp4',
+      thumbnailUrl: 'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?q=80&w=400',
+      category: 'live',
+      isLive: true,
+      views: 184,
+      uploadedAt: new Date().toISOString()
+    },
+    {
+      id: 'vid-highlight-1',
+      title: 'Resumen Semanal: Goles de Antología - Jornada 10 (Sabatina)',
+      url: 'https://assets.mixkit.co/videos/preview/mixkit-soccer-player-kicking-the-ball-in-stadium-40356-large.mp4',
+      thumbnailUrl: 'https://images.unsplash.com/photo-1544698310-74ea9d1c8258?q=80&w=400',
+      category: 'highlight',
+      isLive: false,
+      views: 742,
+      uploadedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
+    },
+    {
+      id: 'vid-match-2',
+      title: 'Partido Completo: Barcelona vs FC San Pancho - Final Nuevos Valores',
+      url: 'https://assets.mixkit.co/videos/preview/mixkit-soccer-ball-hitting-the-net-40347-large.mp4',
+      thumbnailUrl: 'https://images.unsplash.com/photo-1510566337590-2fc1f21d0faa?q=80&w=400',
+      category: 'full_match',
+      isLive: false,
+      views: 1250,
+      uploadedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString()
+    }
   ]
 };
 
@@ -387,6 +434,7 @@ export class DbStore {
           payments: parsed.payments || INITIAL_DATA.payments,
           promotions: parsed.promotions || INITIAL_DATA.promotions,
           photos: parsed.photos || INITIAL_DATA.photos,
+          videos: parsed.videos || INITIAL_DATA.videos || [],
           teams: parsed.teams || INITIAL_DATA.teams,
           players: loadedPlayers,
           reviews: parsed.reviews || INITIAL_DATA.reviews
@@ -526,6 +574,38 @@ export class DbStore {
     this.data.photos.splice(index, 1);
     this.save();
     return true;
+  }
+
+  // --- Gallery Videos Operations ---
+  getVideos(): Video[] {
+    return this.data.videos || [];
+  }
+
+  addVideo(video: Video): Video {
+    if (!this.data.videos) {
+      this.data.videos = [];
+    }
+    this.data.videos.unshift(video);
+    this.save();
+    return video;
+  }
+
+  deleteVideo(id: string): boolean {
+    if (!this.data.videos) return false;
+    const index = this.data.videos.findIndex(v => v.id === id);
+    if (index === -1) return false;
+    this.data.videos.splice(index, 1);
+    this.save();
+    return true;
+  }
+
+  updateVideo(id: string, updated: Partial<Video>): Video | null {
+    if (!this.data.videos) return null;
+    const index = this.data.videos.findIndex(v => v.id === id);
+    if (index === -1) return null;
+    this.data.videos[index] = { ...this.data.videos[index], ...updated };
+    this.save();
+    return this.data.videos[index];
   }
 
   // --- Teams (Equipos) Operations ---
